@@ -58,21 +58,7 @@ const sendEmail = async (product, amount) => {
       console.log('Email sent: ' + info.response);
     }
   });
-};
-
-// const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
-// const accountSid = 'AC5a713329c95ad51b5218a03450d3bf17';
-// const authToken = '446437623d1c508eb34f62600aa8c14e';
-// const client = require('twilio')(accountSid, authToken);
-
- 
-
-
-
-
-
-    
+};   
 
 
 let amount;
@@ -104,18 +90,6 @@ app.post('/buyProduct',async(req,res)=>{
     }
 })
 
-const sendWhatsAppMessage = async (product, amount) => {
-  const productsList = product.map((item) => `${item.name} - ₹${item.price}`).join('\n');
-  const customerDetails = `Phone: ${userDetails.phone}\nCountry: ${userDetails.country}\nState: ${userDetails.state}\nDistrict: ${userDetails.district}\nAddress1: ${userDetails.address1}\nAddress2: ${userDetails.address2}\nPin code: ${userDetails.pin}`;
-
-    client.messages.create({
-      body: `A new payment has been made for ${productsList}\n. Amount: ₹${amount / 100}\n. Customer Details: ${customerDetails}`,
-      from: 'whatsapp:+14155238886', // Twilio's sandbox WhatsApp number
-      to: 'whatsapp:+918946914346' // Owner's WhatsApp number
-    }).then(message => console.log(message.sid))
-      .catch(err => console.log(err));
- };
-
 app.post("/paymentVerification", async (req, res) => {
     const { order_id,payment_id,signature } = req.body;
   
@@ -126,8 +100,8 @@ app.post("/paymentVerification", async (req, res) => {
     if (digest === signature) {
       // Payment is successful
       // Send Email and WhatsApp here
-    //   await sendEmail(product, amount);
-      await sendWhatsAppMessage(product, amount);
+      await sendEmail(product, amount);
+      // await sendWhatsAppMessage(product, amount);
   
       res.status(200).json({ success: true, message: "Payment verified" });
     } else {
