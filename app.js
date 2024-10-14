@@ -62,9 +62,9 @@ const sendEmail = async (product, amount) => {
 
 // const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-const accountSid = 'AC5a713329c95ad51b5218a03450d3bf17';
-const authToken = '446437623d1c508eb34f62600aa8c14e';
-const client = require('twilio')(accountSid, authToken);
+// const accountSid = 'AC5a713329c95ad51b5218a03450d3bf17';
+// const authToken = '446437623d1c508eb34f62600aa8c14e';
+// const client = require('twilio')(accountSid, authToken);
 
  
 
