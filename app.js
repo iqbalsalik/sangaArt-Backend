@@ -10,6 +10,31 @@ const crypto = require('crypto');
 
 const app = express();
 
+// Define allowed origins
+const allowedOrigins = [
+  'https://sangaart.gurulogicsolution.com',
+  'http://localhost:3001' // Include if still testing locally
+];
+
+// CORS Configuration
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
+// Handle Preflight Requests Globally
+app.options('*', cors());
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json());
@@ -118,4 +143,10 @@ app.post("/updateFailureTransactionStatus", async(req,res)=>{
           }
 })
 
-app.listen(3000)
+// Global Error Handler (Ensure this is after all routes)
+app.use((err, req, res, next) => {
+  console.error('Global Error Handler:', err.stack);
+  res.status(500).json({ success: false, message: 'Internal Server Error' });
+});
+
+app.listen(process.env.PORT)
