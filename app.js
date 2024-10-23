@@ -7,13 +7,14 @@ const mockData = require('./mockData');
 const nodemailer = require('nodemailer');
 // const twilio = require('twilio');
 const crypto = require('crypto');
+const path = require("path")
 
 const app = express();
 
-// Define allowed origins
+// // Define allowed origins
 const allowedOrigins = [
-  'https://sangaart.gurulogicsolution.com',
-  'http://localhost:3001' // Include if still testing locally
+  'https://gurulogicsolution.com/sriSangaArt',
+  'http://127.0.0.1:5500/' // Include if still testing locally
 ];
 
 // CORS Configuration
@@ -35,55 +36,72 @@ app.use(cors({
 // Handle Preflight Requests Globally
 app.options('*', cors());
 
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json());
-// const path = require("path")
-// app.use(express.static("Public"))
-
-
-// // const sharp = require('sharp');
-
-// const fs = require('fs');
-
-// const imagePath = path.join(__dirname)+'/assets/products/img1.1.jpg';
-// const imgP = '/'
-
-// const binaryImageData = fs.readFileSync(imagePath);
-
-// // Convert binary data to base64 (optional)
-// const base64ImageData = binaryImageData.toString('base64');
-
-// console.log(binaryImageData);
-// console.log(base64ImageData);
 
 
 
 
-const sendEmail = async (product, amount) => {
+const sendEmail = async (amount, products, userDetails, order_id, payment_id) => {
+  console.log(userDetails)
+
   let transporter = nodemailer.createTransport({
-    service: 'gmail', // Or any other service you are using
+    service: 'gmail',
     auth: {
-      user: process.env.EMAIL_USER, // Your email
-      pass: process.env.EMAIL_PASSWORD // Your password
-    }
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
   });
 
   let mailOptions = {
     from: process.env.EMAIL_USER,
-    to: process.env.OWNER_EMAIL, // Owner's email
-    subject: `New Payment for Product`,
-    text: `A new payment has been made for ${product.name}. Amount: ₹${amount / 100}.`
+    to: process.env.OWNER_EMAIL,
+    subject: `New Payment for Products`,
+    text: `
+      A new payment has been made for the following products:
+      ${products.map((product) => `- ${product.name} (x${product.quantity}) - ₹${product.price}\n`).join('')}
+      Amount: ₹${amount / 100}.
+      Customer Country: ${userDetails.country}
+      Customer state: ${userDetails.state}
+      Customer district: ${userDetails.district}
+      Customer Address1: ${userDetails.address1}
+      Customer Address2: ${userDetails.address2}
+      Customer Pin: ${userDetails.pin}
+      Customer Contact: ${userDetails.phone}
+      Order ID: ${order_id}
+      Payment ID: ${payment_id}
+    `,
+    html: `
+      <p><strong>Customer Details:</strong></p>
+      <ul>
+        <li><strong>address:</strong> ${userDetails.country +"," +" "+userDetails.state +","+" " + userDetails.district+","+" " + userDetails.address1+","+" " + userDetails.address2+","+" " + userDetails.pin }</li>
+        <li><strong>Contact:</strong> ${userDetails.phone}</li>
+      </ul>
+      <p><strong>Order ID:</strong> ${order_id}</p>
+      <p><strong>Payment ID:</strong> ${payment_id}</p>
+      <p><strong>Products:</strong></p>
+      <ul>
+        ${products.map((product) => `<li>${product.name} (x${product.quantity}) - ₹${product.price}</li>`).join('')}
+      </ul>
+    `,
+    attachments: products.map((product) => ({
+      filename: product.image.split('/').pop(),
+      path: path.join(__dirname,  product.image),
+      cid: `unique-${product.image}@nodemailer`,
+    })),
   };
 
-  transporter.sendMail(mailOptions, function (error, info) {
+
+  transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.log(error);
     } else {
       console.log('Email sent: ' + info.response);
     }
   });
-};   
+}; 
 
 
 let amount;
@@ -117,7 +135,6 @@ app.post('/buyProduct',async(req,res)=>{
 
 app.post("/paymentVerification", async (req, res) => {
     const { order_id,payment_id,signature } = req.body;
-  
     const shasum = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET);
     shasum.update(order_id + "|" + payment_id);
     const digest = shasum.digest("hex");
@@ -125,7 +142,7 @@ app.post("/paymentVerification", async (req, res) => {
     if (digest === signature) {
       // Payment is successful
       // Send Email and WhatsApp here
-      await sendEmail(product, amount);
+      await sendEmail(amount,product,userDetails,order_id,payment_id);
       // await sendWhatsAppMessage(product, amount);
   
       res.status(200).json({ success: true, message: "Payment verified" });
@@ -143,10 +160,10 @@ app.post("/updateFailureTransactionStatus", async(req,res)=>{
           }
 })
 
-// Global Error Handler (Ensure this is after all routes)
+// // Global Error Handler (Ensure this is after all routes)
 app.use((err, req, res, next) => {
   console.error('Global Error Handler:', err.stack);
   res.status(500).json({ success: false, message: 'Internal Server Error' });
 });
 
-app.listen(process.env.PORT)
+app.listen(3000)
